@@ -22,6 +22,8 @@
     duration: 72,
     particles: [],
     stars: [],
+    secretBuffer: "",
+    catActivatedAt: 0,
   };
 
   const palette = {
@@ -31,6 +33,16 @@
     magenta: [255, 70, 218],
     white: [226, 252, 255],
   };
+
+  const quantumCat = new Image();
+  quantumCat.src = "assets/easter-eggs/quantum-cat.png";
+
+  try {
+    const storedActivation = Number(localStorage.getItem("quantum-cat-at"));
+    if (Date.now() - storedActivation < 12000) state.catActivatedAt = storedActivation;
+  } catch (_) {
+    // The animation still works when browser storage is unavailable.
+  }
 
   if (isOutput) {
     document.body.classList.add("output-mode");
@@ -396,6 +408,26 @@
     ctx.restore();
   }
 
+  function drawQuantumCat() {
+    if (!quantumCat.complete || !quantumCat.naturalWidth || !state.catActivatedAt) return;
+    const elapsed = (Date.now() - state.catActivatedAt) / 1000;
+    if (elapsed < 0 || elapsed > 12) return;
+
+    const visibility = smoothstep(0, 2.2, elapsed) * (1 - smoothstep(8.5, 12, elapsed));
+    const worldWidth = isOutput ? state.width * 8 : state.width;
+    const center = viewPoint(.5 + Math.sin(elapsed * .24) * .025, .52 + Math.sin(elapsed * .42) * .018);
+    const width = worldWidth * .19;
+    const height = width * quantumCat.naturalHeight / quantumCat.naturalWidth;
+
+    ctx.save();
+    ctx.globalCompositeOperation = "screen";
+    ctx.globalAlpha = visibility * .28;
+    ctx.shadowBlur = 34;
+    ctx.shadowColor = rgba(palette.violet, .7);
+    ctx.drawImage(quantumCat, center.x - width / 2, center.y - height / 2, width, height);
+    ctx.restore();
+  }
+
   function drawGuides() {
     if (!state.guides || isOutput) return;
     ctx.save();
@@ -452,6 +484,7 @@
       drawBlochSphere(.5, .5, .16 + collapse * .03, time * 1.5, 0, collapse);
     }
 
+    drawQuantumCat();
     drawGuides();
 
     if (state.running) requestAnimationFrame(render);
@@ -483,6 +516,17 @@
       state.guides = !state.guides;
       if (!state.running) render();
     }
+    if (/^[a-z]$/i.test(event.key)) {
+      state.secretBuffer = (state.secretBuffer + event.key.toUpperCase()).slice(-4);
+      if (state.secretBuffer === "QCAT") {
+        state.catActivatedAt = Date.now();
+        try { localStorage.setItem("quantum-cat-at", String(state.catActivatedAt)); } catch (_) {}
+        if (!state.running) render();
+      }
+    }
+  });
+  addEventListener("storage", (event) => {
+    if (event.key === "quantum-cat-at") state.catActivatedAt = Number(event.newValue) || 0;
   });
   addEventListener("dblclick", toggleFullscreen);
   addEventListener("resize", resize);
