@@ -66,6 +66,19 @@ http://localhost:8080/?screen=1
 
 Las escenas y sus tiempos están en [`src/config/timeline-config.js`](src/config/timeline-config.js). El movimiento del gato se implementa como un componente reutilizable en [`src/components/cat-component.js`](src/components/cat-component.js).
 
+## Rendimiento
+
+La experiencia limita la densidad de píxeles y se estabiliza en 40 FPS. Si el costo de un cuadro aumenta, reduce progresivamente partículas y segmentos orbitales antes de perder fluidez. Los límites se pueden ajustar en [`src/config/scene-config.js`](src/config/scene-config.js):
+
+```js
+performance: {
+  targetFps: 40,
+  dprCap: 1.25,
+  minimumQuality: 0.55,
+  qualityStep: 0.1
+}
+```
+
 ## Modo de depuración
 
 Cambia una sola propiedad en [`src/config/screen-config.js`](src/config/screen-config.js):

@@ -15,6 +15,12 @@ const clock = new Timeline(TIMELINE);
 const environment = new QuantumEnvironment(VISUAL_CONFIG, mapper.bounds);
 const cat = new QuantumCat(VISUAL_CONFIG, mapper.bounds, TIMELINE);
 const effects = new QuantumEffects(VISUAL_CONFIG, mapper.bounds, TIMELINE, environment);
+const performanceConfig = VISUAL_CONFIG.performance;
+const frameInterval = 1000 / performanceConfig.targetFps;
+let lastFrameAt = 0;
+let renderQuality = 1;
+let overBudgetFrames = 0;
+let stableFrames = 0;
 
 if (SCREEN_CONFIG.debugMode) {
   const debugTime = new URLSearchParams(location.search).get("time");
@@ -35,7 +41,7 @@ function validateConfiguration() {
 }
 
 function resize() {
-  const dpr = Math.min(devicePixelRatio || 1, 2);
+  const dpr = Math.min(devicePixelRatio || 1, performanceConfig.dprCap);
   canvas.width = Math.round(innerWidth * dpr);
   canvas.height = Math.round(innerHeight * dpr);
   canvas.style.width = `${innerWidth}px`;
@@ -44,7 +50,32 @@ function resize() {
   mapper.resize(innerWidth, innerHeight);
 }
 
-function render() {
+function updateAdaptiveQuality(renderCost) {
+  const budget = frameInterval * .82;
+  if (renderCost > budget) {
+    overBudgetFrames += 1;
+    stableFrames = 0;
+  } else {
+    stableFrames += 1;
+    overBudgetFrames = Math.max(0, overBudgetFrames - 1);
+  }
+
+  if (overBudgetFrames >= 14 && renderQuality > performanceConfig.minimumQuality) {
+    renderQuality = Math.max(performanceConfig.minimumQuality, renderQuality - performanceConfig.qualityStep);
+    environment.setQuality(renderQuality);
+    overBudgetFrames = 0;
+  } else if (stableFrames >= 320 && renderQuality < 1) {
+    renderQuality = Math.min(1, renderQuality + performanceConfig.qualityStep);
+    environment.setQuality(renderQuality);
+    stableFrames = 0;
+  }
+}
+
+function render(timestamp) {
+  requestAnimationFrame(render);
+  if (timestamp - lastFrameAt < frameInterval) return;
+  lastFrameAt = timestamp - ((timestamp - lastFrameAt) % frameInterval);
+  const renderStartedAt = performance.now();
   const time = clock.time;
   const interaction = effects.interactionIntensity(time);
   environment.render(ctx, mapper, time, interaction);
@@ -53,7 +84,7 @@ function render() {
   if (SCREEN_CONFIG.debugMode) {
     drawDebugOverlay(ctx, mapper, time, cat, TIMELINE, VISUAL_CONFIG.palette);
   }
-  requestAnimationFrame(render);
+  updateAdaptiveQuality(performance.now() - renderStartedAt);
 }
 
 addEventListener("resize", resize);

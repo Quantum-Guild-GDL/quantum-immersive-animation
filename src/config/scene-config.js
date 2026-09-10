@@ -9,9 +9,16 @@ export const VISUAL_CONFIG = {
     white: [224, 250, 255],
     pumpkin: [255, 143, 72],
   },
-  particleCount: 760,
-  orbitCount: 14,
+  particleCount: 520,
+  orbitCount: 10,
+  orbitSteps: 72,
   sphereCount: 7,
+  performance: {
+    targetFps: 40,
+    dprCap: 1.25,
+    minimumQuality: 0.55,
+    qualityStep: 0.1,
+  },
   cat: {
     asset: "assets/easter-eggs/quantum-cat.png",
     width: 500,

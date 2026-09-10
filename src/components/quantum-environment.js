@@ -5,6 +5,7 @@ export class QuantumEnvironment {
     this.config = config;
     this.palette = config.palette;
     this.bounds = bounds;
+    this.quality = 1;
     this.particles = Array.from({ length: config.particleCount }, (_, index) => ({
       x: bounds.x + seeded(index * 8 + 1) * bounds.width,
       y: bounds.y + (.08 + seeded(index * 8 + 2) * .84) * bounds.height,
@@ -15,8 +16,8 @@ export class QuantumEnvironment {
       violet: seeded(index * 8 + 7) > .82,
     }));
     const sphereLayout = [
-      [.08, .3, 38], [.22, .68, 88], [.42, .34, 66], [.58, .6, 115],
-      [.71, .24, 48], [.86, .7, 76], [.96, .42, 34],
+      [.08, .3, 38], [.22, .68, 88], [.42, .34, 66], [.58, .82, 108],
+      [.71, .24, 48], [.86, .78, 76], [.96, .42, 34],
     ];
     this.spheres = Array.from({ length: config.sphereCount }, (_, index) => ({
       x: bounds.x + sphereLayout[index % sphereLayout.length][0] * bounds.width,
@@ -26,6 +27,10 @@ export class QuantumEnvironment {
       speed: .08 + seeded(index + 900) * .1,
     }));
     this.reactionSphere = this.spheres[2];
+  }
+
+  setQuality(quality) {
+    this.quality = Math.max(this.config.performance.minimumQuality, Math.min(1, quality));
   }
 
   render(ctx, mapper, time, interaction = 0) {
@@ -69,8 +74,9 @@ export class QuantumEnvironment {
       const ry = this.bounds.height * (.035 + orbit * .022);
       const tilt = Math.sin(orbit * 1.43) * .34;
       ctx.beginPath();
-      for (let step = 0; step <= 120; step++) {
-        const angle = step / 120 * Math.PI * 2 + time * (.003 + orbit * .0002);
+      const steps = Math.max(36, Math.round(this.config.orbitSteps * this.quality));
+      for (let step = 0; step <= steps; step++) {
+        const angle = step / steps * Math.PI * 2 + time * (.003 + orbit * .0002);
         const ox = Math.cos(angle) * rx;
         const oy = Math.sin(angle) * ry;
         const x = centerX + ox * Math.cos(tilt) - oy * Math.sin(tilt);
@@ -89,7 +95,10 @@ export class QuantumEnvironment {
     const target = this.reactionSphere;
     ctx.save();
     ctx.globalCompositeOperation = "lighter";
-    for (const particle of this.particles) {
+    ctx.shadowBlur = 0;
+    const particleLimit = Math.round(this.particles.length * this.quality);
+    for (let index = 0; index < particleLimit; index++) {
+      const particle = this.particles[index];
       let x = this.bounds.x + ((particle.x - this.bounds.x + time * particle.speed * particle.depth) % this.bounds.width);
       let y = particle.y + Math.sin(time * (.08 + particle.depth * .08) + particle.phase) * 8 * particle.depth;
       if (interaction > .001) {
@@ -105,10 +114,23 @@ export class QuantumEnvironment {
       const flicker = .25 + Math.pow(Math.sin(time * .7 + particle.phase) * .5 + .5, 3) * .65;
       const color = particle.violet ? this.palette.violet : this.palette.cyan;
       ctx.fillStyle = rgba(color, flicker * (.12 + particle.depth * .34));
-      ctx.shadowBlur = particle.depth * 7;
-      ctx.shadowColor = rgba(color, .45);
       ctx.beginPath();
       ctx.arc(p.x, p.y, particle.size * mapper.scale * (.7 + particle.depth * .4), 0, Math.PI * 2);
+      ctx.fill();
+    }
+
+    // A small second pass provides bloom without applying an expensive shadow
+    // filter to every particle.
+    for (let index = 0; index < particleLimit; index += 31) {
+      const particle = this.particles[index];
+      const x = this.bounds.x + ((particle.x - this.bounds.x + time * particle.speed * particle.depth) % this.bounds.width);
+      const y = particle.y + Math.sin(time * (.08 + particle.depth * .08) + particle.phase) * 8 * particle.depth;
+      if (!mapper.isVisible(x, y, 20)) continue;
+      const p = mapper.point(x, y);
+      const color = particle.violet ? this.palette.violet : this.palette.cyan;
+      ctx.fillStyle = rgba(color, .08);
+      ctx.beginPath();
+      ctx.arc(p.x, p.y, Math.max(1.5, particle.size * mapper.scale * 3.2), 0, Math.PI * 2);
       ctx.fill();
     }
     ctx.restore();

@@ -75,6 +75,7 @@ export class QuantumEffects {
     ctx.translate(x, y);
     ctx.rotate(rotation);
     ctx.globalCompositeOperation = "lighter";
+    ctx.shadowBlur = 0;
     pads.forEach(([px, py, radius], padIndex) => {
       const dots = padIndex ? 7 : 15;
       for (let dot = 0; dot < dots; dot++) {
@@ -85,8 +86,6 @@ export class QuantumEffects {
         const dy = (py + Math.sin(angle) * (distance + drift)) * scale;
         const color = (dot + padIndex) % 3 ? this.config.palette.cyan : this.config.palette.violet;
         ctx.fillStyle = rgba(color, opacity * (1 - fragment) * .52);
-        ctx.shadowBlur = 7;
-        ctx.shadowColor = rgba(color, .55);
         ctx.beginPath();
         ctx.arc(dx, dy, Math.max(.45, scale * .75), 0, Math.PI * 2);
         ctx.fill();
@@ -139,4 +138,3 @@ export class QuantumEffects {
     }
   }
 }
-
