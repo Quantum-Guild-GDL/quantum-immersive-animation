@@ -111,10 +111,4 @@ scripts/dev-server.mjs    Servidor local sin dependencias
 
 ![Final de Quantum Cat Journey con Qiskit Fall Fest Guadalajara 2026](assets/references/quantum-cat-journey-reference.png)
 
-### Campo cuántico original
-
-![Campo cuántico panorámico](assets/references/installation-reference-01.png)
-
-![Esferas de Bloch distribuidas en el lienzo](assets/references/installation-reference-02.png)
-
 El razonamiento visual y técnico previo a la implementación está documentado en [`docs/IMPLEMENTATION_PLAN.md`](docs/IMPLEMENTATION_PLAN.md).
