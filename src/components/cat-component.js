@@ -1,4 +1,4 @@
-import { clamp, lerp, rgba, smootherstep, smoothstep } from "../core/math.js";
+import { lerp, rgba, smootherstep, smoothstep } from "../core/math.js";
 
 export class QuantumCat {
   constructor(config, bounds, timeline) {
@@ -7,6 +7,10 @@ export class QuantumCat {
     this.timeline = timeline;
     this.image = new Image();
     this.image.src = config.cat.asset;
+    this.finaleLogo = new Image();
+    this.finaleLogo.src = config.finale.logoAsset;
+    this.finaleCat = new Image();
+    this.finaleCat.src = config.finale.catAsset;
   }
 
   render(ctx, mapper, time) {
@@ -94,66 +98,35 @@ export class QuantumCat {
 
   drawFinale(ctx, mapper, time) {
     const reveal = smoothstep(94, 98, time) * (1 - smoothstep(103, 106, time));
-    if (reveal <= .001) return;
-    const center = mapper.point(this.bounds.x + this.bounds.width * .5, this.bounds.y + this.bounds.height);
-    const scale = mapper.scale;
-    const rise = reveal * 122 * scale;
-    const y = center.y + 58 * scale - rise;
-    const eyeReveal = smoothstep(97, 99, time) * (1 - smoothstep(103, 106, time));
+    const logoReveal = smoothstep(97.2, 99.5, time) * (1 - smoothstep(103, 106, time));
+    if (reveal <= .001 && logoReveal <= .001) return;
+
+    const centerX = this.bounds.x + this.bounds.width * .5;
+    const logoCenter = mapper.point(centerX, this.bounds.y + this.bounds.height * .34);
+    const bottomCenter = mapper.point(centerX, this.bounds.y + this.bounds.height);
 
     ctx.save();
-    ctx.globalAlpha = reveal;
-    ctx.fillStyle = "#010208";
-    ctx.strokeStyle = rgba(this.config.palette.violet, .2);
-    ctx.lineWidth = 1;
-    ctx.shadowBlur = 18;
-    ctx.shadowColor = rgba(this.config.palette.violet, .25);
-    ctx.beginPath();
-    ctx.moveTo(center.x - 88 * scale, y + 72 * scale);
-    ctx.quadraticCurveTo(center.x - 92 * scale, y - 18 * scale, center.x - 57 * scale, y - 48 * scale);
-    ctx.lineTo(center.x - 38 * scale, y - 111 * scale);
-    ctx.lineTo(center.x - 3 * scale, y - 67 * scale);
-    ctx.quadraticCurveTo(center.x + 28 * scale, y - 72 * scale, center.x + 45 * scale, y - 58 * scale);
-    ctx.lineTo(center.x + 82 * scale, y - 102 * scale);
-    ctx.lineTo(center.x + 91 * scale, y - 34 * scale);
-    ctx.quadraticCurveTo(center.x + 104 * scale, y + 38 * scale, center.x + 82 * scale, y + 72 * scale);
-    ctx.closePath();
-    ctx.fill();
-    ctx.stroke();
+    ctx.globalCompositeOperation = "screen";
+    if (this.finaleLogo.complete && this.finaleLogo.naturalWidth) {
+      const logoWidth = mapper.radius(this.config.finale.logoWidth);
+      const logoHeight = logoWidth * this.finaleLogo.naturalHeight / this.finaleLogo.naturalWidth;
+      ctx.globalAlpha = logoReveal * .72;
+      ctx.shadowBlur = 15;
+      ctx.shadowColor = rgba(this.config.palette.violet, .3);
+      ctx.drawImage(this.finaleLogo, logoCenter.x - logoWidth / 2, logoCenter.y - logoHeight / 2, logoWidth, logoHeight);
+    }
 
-    ctx.globalCompositeOperation = "lighter";
-    ctx.globalAlpha = eyeReveal * .64;
-    ctx.strokeStyle = rgba(this.config.palette.cyan, .9);
-    ctx.lineWidth = 1.4 * scale;
-    ctx.shadowBlur = 12;
-    ctx.shadowColor = rgba(this.config.palette.cyan, .9);
-    [[-37, -22], [40, -22]].forEach(([dx, dy]) => {
-      ctx.beginPath();
-      ctx.moveTo(center.x + (dx - 11) * scale, y + dy * scale);
-      ctx.quadraticCurveTo(center.x + dx * scale, y + (dy + 7) * scale, center.x + (dx + 11) * scale, y + dy * scale);
-      ctx.stroke();
-    });
-    ctx.restore();
-
-    this.drawFinaleText(ctx, mapper, time);
-  }
-
-  drawFinaleText(ctx, mapper, time) {
-    const opacity = smoothstep(97.8, 100, time) * (1 - smoothstep(103, 106, time));
-    if (opacity <= .001) return;
-    const p = mapper.point(this.bounds.x + this.bounds.width * .5, this.bounds.y + this.bounds.height * .55);
-    ctx.save();
-    ctx.globalCompositeOperation = "lighter";
-    ctx.globalAlpha = opacity * .78;
-    ctx.textAlign = "center";
-    ctx.fillStyle = rgba(this.config.palette.white, .92);
-    ctx.shadowBlur = 18;
-    ctx.shadowColor = rgba(this.config.palette.cyan, .5);
-    ctx.font = `300 ${Math.max(18, mapper.radius(34))}px ui-sans-serif, system-ui, sans-serif`;
-    ctx.fillText("Qiskit Fall Fest", p.x, p.y);
-    ctx.fillStyle = rgba(this.config.palette.cyan, .72);
-    ctx.font = `500 ${Math.max(9, mapper.radius(14))}px ui-monospace, monospace`;
-    ctx.fillText("Guadalajara 2026", p.x, p.y + mapper.radius(34));
+    if (this.finaleCat.complete && this.finaleCat.naturalWidth) {
+      const catWidth = mapper.radius(this.config.finale.catWidth);
+      const catHeight = catWidth * this.finaleCat.naturalHeight / this.finaleCat.naturalWidth;
+      const hiddenTop = bottomCenter.y + catHeight * .04;
+      const visibleTop = bottomCenter.y - catHeight * .78;
+      const top = lerp(hiddenTop, visibleTop, reveal);
+      ctx.globalAlpha = reveal * .68;
+      ctx.shadowBlur = 18;
+      ctx.shadowColor = rgba(this.config.palette.violet, .32);
+      ctx.drawImage(this.finaleCat, bottomCenter.x - catWidth / 2, top, catWidth, catHeight);
+    }
     ctx.restore();
   }
 }

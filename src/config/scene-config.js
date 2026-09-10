@@ -25,4 +25,10 @@ export const VISUAL_CONFIG = {
     opacity: 0.34,
     trajectoryY: 0.51,
   },
+  finale: {
+    logoAsset: "assets/finale/qiskit-fall-fest-guadalajara.png",
+    catAsset: "assets/finale/astronaut-cat-peek.png",
+    logoWidth: 900,
+    catWidth: 680,
+  },
 };
