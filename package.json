@@ -1,0 +1,14 @@
+{
+  "name": "quantum-cat-journey",
+  "version": "2.0.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "node scripts/dev-server.mjs",
+    "check": "node --check src/main.js && node --check src/components/quantum-environment.js && node --check src/components/cat-component.js && node --check src/components/quantum-effects.js"
+  },
+  "engines": {
+    "node": ">=18"
+  }
+}
+

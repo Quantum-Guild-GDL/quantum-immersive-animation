@@ -1,40 +1,101 @@
-# Quantum Field — instalación inmersiva de 8 pantallas
+# Quantum Cat Journey
 
-Prototipo generativo sin dependencias ni licencias. Representa superposición, esferas de Bloch, compuertas cuánticas, entrelazamiento y medición en un loop de 72 segundos.
+Experiencia audiovisual generativa para una instalación de múltiples pantallas. Un campo cuántico científico permanece como protagonista mientras un gato astronauta aparece gradualmente como un easter egg integrado en el sistema.
+
+La animación utiliza Canvas 2D, módulos JavaScript nativos y el reloj del sistema. No requiere librerías, cuentas ni servicios externos.
+
+## Experiencia
+
+El loop dura 112 segundos e incluye:
+
+1. Campo cuántico ambiental sin gato.
+2. Una cola casi imperceptible en el borde.
+3. Cruce del gato con movimiento de gravedad cero.
+4. Reacción sutil de una esfera de Bloch.
+5. Superposición del gato durante 1.35 segundos.
+6. Huellas formadas por partículas.
+7. Encuentro breve con una calabaza cuántica.
+8. Falso final, aparición de ojos y cierre de Qiskit Fall Fest Guadalajara 2026.
+
+## Ejecutar
+
+Requiere Node.js 18 o posterior. No hay dependencias que instalar.
+
+```bash
+npm run dev
+```
+
+Abre `http://localhost:8080`.
+
+En macOS también puedes hacer doble clic en `Iniciar Quantum Field.command`. Mantén abierta la ventana de Terminal durante la reproducción.
+
+## Pantalla completa
+
+- Presiona `F` o haz doble clic sobre la animación.
+- El cursor permanece oculto para que la salida no parezca una página web.
+
+## Configurar las pantallas
+
+Edita [`src/config/screen-config.js`](src/config/screen-config.js). El motor no presupone una cantidad, resolución o distribución específica. Cada región contiene:
+
+```js
+{
+  id: "SCREEN_1",
+  width: 320,
+  height: 1080,
+  x: 0,
+  y: 0,
+  orientation: 0,
+  transitionDelay: 0.18
+}
+```
+
+- `x`, `y`: posición dentro del lienzo virtual.
+- `width`, `height`: resolución lógica de la región.
+- `orientation`: `0`, `90`, `180` o `270` grados.
+- `transitionDelay`: pausa en segundos antes de entrar a la siguiente pantalla.
+
+La vista sin parámetros muestra el lienzo virtual completo. Para una salida individual usa el ID o el número:
+
+```text
+http://localhost:8080/?screen=SCREEN_1
+http://localhost:8080/?screen=1
+```
+
+## Línea de tiempo
+
+Las escenas y sus tiempos están en [`src/config/timeline-config.js`](src/config/timeline-config.js). El movimiento del gato se implementa como un componente reutilizable en [`src/components/cat-component.js`](src/components/cat-component.js).
+
+## Modo de depuración
+
+Cambia una sola propiedad en [`src/config/screen-config.js`](src/config/screen-config.js):
+
+```js
+debugMode: true
+```
+
+El modo de depuración muestra límites del lienzo, regiones físicas, IDs, trayectoria y tiempo. Con el modo activo:
+
+- `Espacio`: pausa o continúa.
+- Teclas `0`–`9`: saltan a intervalos de diez segundos.
+- `?time=48.7`: congela un instante específico para revisión visual.
+
+Para producción, conserva `debugMode: false`.
+
+## Estructura
+
+```text
+assets/                   Imágenes y referencias
+src/config/               Pantallas, escenas y tiempos
+src/core/                 Mapeo, reloj y utilidades
+src/components/           Entorno, gato, efectos y depuración
+scripts/dev-server.mjs    Servidor local sin dependencias
+```
 
 ## Referencias visuales
 
-Estas capturas muestran la composición panorámica provisional y la división del lienzo en ocho canales.
+![Campo cuántico panorámico](assets/references/installation-reference-01.png)
 
-![Campo cuántico panorámico dividido en ocho pantallas](assets/references/installation-reference-01.png)
+![Esferas de Bloch distribuidas en el lienzo](assets/references/installation-reference-02.png)
 
-![Ocho esferas de Bloch distribuidas entre las pantallas](assets/references/installation-reference-02.png)
-
-## Abrir la previsualización
-
-En macOS, haz doble clic en `Iniciar Quantum Field.command`. Se abrirá el navegador y una ventana de Terminal; mantén esa ventana abierta durante la reproducción.
-
-También puedes abrir `index.html` directamente en Chrome o iniciar un servidor local:
-
-```bash
-python3 -m http.server 8080
-```
-
-Después abre `http://localhost:8080`.
-
-## Controles
-
-- `F`: pantalla completa.
-- `Espacio`: pausar o continuar.
-- `G`: mostrar u ocultar las divisiones de las 8 pantallas.
-
-## Salida individual por pantalla
-
-Cada salida muestra su segmento del panorama completo:
-
-- `http://localhost:8080/?screen=1`
-- `http://localhost:8080/?screen=2`
-- …
-- `http://localhost:8080/?screen=8`
-
-Los canales usan el reloj del sistema para mantenerse en el mismo punto del loop. Si se ejecutan en varios equipos, sincroniza sus relojes mediante la configuración automática de fecha y hora. Para la instalación final se reemplazará el mapeo provisional por las proporciones reales de los paneles.
+El razonamiento visual y técnico previo a la implementación está documentado en [`docs/IMPLEMENTATION_PLAN.md`](docs/IMPLEMENTATION_PLAN.md).
