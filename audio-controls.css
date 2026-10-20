@@ -1,0 +1,47 @@
+.audio-controls {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 14px 20px;
+  color: #e0faff;
+  font: 13px system-ui, sans-serif;
+  cursor: auto;
+}
+
+.audio-toggle {
+  padding: 10px 14px;
+  border: 1px solid #4ee0ff66;
+  border-radius: 6px;
+  background: #0a1222;
+  color: #e0faff;
+  font: inherit;
+  cursor: pointer;
+}
+
+.audio-toggle:hover, .audio-toggle:focus-visible { border-color: #4ee0ff; }
+.audio-toggle[aria-pressed="true"] { background: #102a32; }
+.audio-toggle:disabled { opacity: .65; cursor: wait; }
+.audio-volume { display: flex; align-items: center; gap: 10px; }
+.audio-volume input { width: 110px; accent-color: #4ee0ff; cursor: pointer; }
+.audio-volume output { min-width: 4ch; font-variant-numeric: tabular-nums; }
+.audio-status { color: #90a4be; font-size: 12px; }
+.preview-audio { margin-top: 24px; }
+
+.audio-floating {
+  position: fixed;
+  z-index: 2;
+  bottom: 20px;
+  right: 20px;
+  max-width: calc(100vw - 40px);
+  padding: 12px;
+  border: 1px solid #25334a;
+  border-radius: 8px;
+  background: #01030ae6;
+  transition: opacity .3s;
+}
+
+.audio-floating .audio-status { display: none; }
+.audio-floating[data-error="true"] .audio-status { display: inline; }
+.audio-floating[data-enabled="true"] { opacity: .12; }
+.audio-floating:hover, .audio-floating:focus-within { opacity: 1; }
+:fullscreen .audio-floating { display: none; }

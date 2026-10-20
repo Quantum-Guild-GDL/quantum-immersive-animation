@@ -101,10 +101,6 @@ export class QuantumCat {
     const logoReveal = smoothstep(97.2, 99.5, time) * (1 - smoothstep(103, 106, time));
     if (reveal <= .001 && logoReveal <= .001) return;
 
-    const centerX = this.bounds.x + this.bounds.width * .5;
-    const logoCenter = mapper.point(centerX, this.bounds.y + this.bounds.height * .34);
-    const bottomCenter = mapper.point(centerX, this.bounds.y + this.bounds.height);
-
     ctx.save();
     ctx.globalCompositeOperation = "screen";
     if (this.finaleLogo.complete && this.finaleLogo.naturalWidth) {
@@ -113,19 +109,31 @@ export class QuantumCat {
       ctx.globalAlpha = logoReveal * .72;
       ctx.shadowBlur = 15;
       ctx.shadowColor = rgba(this.config.palette.violet, .3);
-      ctx.drawImage(this.finaleLogo, logoCenter.x - logoWidth / 2, logoCenter.y - logoHeight / 2, logoWidth, logoHeight);
+      mapper.screens.forEach((screen) => {
+        const x = screen.x + screen.width * .5;
+        const y = screen.y + screen.height * .34;
+        if (!mapper.isVisible(x, y, this.config.finale.logoWidth)) return;
+        const logoCenter = mapper.point(x, y);
+        ctx.drawImage(this.finaleLogo, logoCenter.x - logoWidth / 2, logoCenter.y - logoHeight / 2, logoWidth, logoHeight);
+      });
     }
 
     if (this.finaleCat.complete && this.finaleCat.naturalWidth) {
       const catWidth = mapper.radius(this.config.finale.catWidth);
       const catHeight = catWidth * this.finaleCat.naturalHeight / this.finaleCat.naturalWidth;
-      const hiddenTop = bottomCenter.y + catHeight * .04;
-      const visibleTop = bottomCenter.y - catHeight * .78;
-      const top = lerp(hiddenTop, visibleTop, reveal);
       ctx.globalAlpha = reveal * .68;
       ctx.shadowBlur = 18;
       ctx.shadowColor = rgba(this.config.palette.violet, .32);
-      ctx.drawImage(this.finaleCat, bottomCenter.x - catWidth / 2, top, catWidth, catHeight);
+      mapper.screens.forEach((screen) => {
+        const x = screen.x + screen.width * .5;
+        const y = screen.y + screen.height;
+        if (!mapper.isVisible(x, y, this.config.finale.catWidth)) return;
+        const bottomCenter = mapper.point(x, y);
+        const hiddenTop = bottomCenter.y + catHeight * .04;
+        const visibleTop = bottomCenter.y - catHeight * .78;
+        const top = lerp(hiddenTop, visibleTop, reveal);
+        ctx.drawImage(this.finaleCat, bottomCenter.x - catWidth / 2, top, catWidth, catHeight);
+      });
     }
     ctx.restore();
   }

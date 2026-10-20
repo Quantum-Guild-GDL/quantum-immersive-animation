@@ -1,0 +1,125 @@
+<!doctype html>
+<html lang="es">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="theme-color" content="#01030a" />
+    <title>Quantum Cat Journey · Vista previa</title>
+    <link rel="stylesheet" href="audio-controls.css" />
+    <style>
+      :root { color-scheme: dark; font-family: system-ui, sans-serif; background: #01030a; color: #e0faff; }
+      * { box-sizing: border-box; }
+      body { margin: 0; padding: clamp(16px, 4vw, 56px); }
+      main { max-width: 1600px; margin: auto; }
+      header { display: flex; flex-wrap: wrap; gap: 24px; align-items: center; justify-content: space-between; margin-bottom: 48px; }
+      h1 { font-size: clamp(22px, 3vw, 32px); font-weight: 500; margin: 0 0 10px; letter-spacing: -.04em; }
+      p { color: #90a4be; font-size: 14px; line-height: 1.6; margin: 0; }
+      .controls { display: flex; flex-wrap: wrap; align-items: center; gap: 16px; font-size: 13px; }
+      select, a, .replay-cats { color: #e0faff; background: #0a1222; border: 1px solid #25334a; border-radius: 6px; padding: 10px 12px; font: inherit; }
+      .replay-cats { cursor: pointer; }
+      a { text-decoration: none; }
+      a:hover, select:hover, .replay-cats:hover { border-color: #4ee0ff; }
+      label { display: flex; align-items: center; gap: 8px; }
+      input { accent-color: #4ee0ff; }
+      .stage { position: relative; width: 100%; max-width: calc(65vh * var(--aspect)); aspect-ratio: var(--aspect); margin: 0 auto; outline: 1px solid #25334a; background: #01030a; }
+      iframe { display: block; border: 0; width: 100%; height: 100%; }
+      .guides { position: absolute; inset: 0; pointer-events: none; }
+      .guide { position: absolute; border-left: 1px dashed #4ee0ff55; border-right: 1px dashed #4ee0ff22; }
+      .guide span { position: absolute; top: 8px; left: 8px; font: 11px ui-monospace, monospace; color: #b9deed; background: #01030acc; padding: 4px 6px; border-radius: 3px; }
+      footer { margin-top: 24px; }
+      @media (max-width: 600px) { header { margin-bottom: 32px; } .guide span { top: 3px; left: 2px; padding: 2px; font-size: 9px; } }
+    </style>
+  </head>
+  <body>
+    <main>
+      <header>
+        <div>
+          <h1>Quantum Cat Journey</h1>
+          <p id="dimensions">Vista previa de la instalación</p>
+        </div>
+        <div class="controls">
+          <label>Vista <select id="screen"><option value="">Todas las pantallas</option></select></label>
+          <label><input id="show-guides" type="checkbox" checked /> Mostrar divisiones</label>
+          <button class="replay-cats" id="replay-cats" type="button">Ver gatos y logos</button>
+          <button class="replay-cats" id="replay-resources" type="button">Ver QR y videos</button>
+          <a id="clean-view" href="./index.html">Abrir animación</a>
+        </div>
+      </header>
+      <div class="stage" id="stage" style="--aspect: 5.625">
+        <iframe id="animation" title="Animación cuántica en vivo" allow="fullscreen; autoplay"></iframe>
+        <div class="guides" id="guides" aria-hidden="true"></div>
+      </div>
+      <section class="preview-audio" id="audio-controls" aria-label="Sonido espacial"></section>
+      <footer><p>El video se reproduce simultáneamente en dos pantallas. Los QR, logos y videos rotan entre pantallas. Selecciona una para verla de cerca.</p></footer>
+    </main>
+    <script type="module">
+      import { SCREEN_CONFIG } from "./src/config/screen-config.js";
+      import { TIMELINE } from "./src/config/timeline-config.js";
+      import { ScreenMapper } from "./src/core/screen-mapper.js";
+      import { mountAudioControls } from "./src/components/quantum-audio.js";
+
+      const mapper = new ScreenMapper(SCREEN_CONFIG);
+      const select = document.querySelector("#screen");
+      const stage = document.querySelector("#stage");
+      const animation = document.querySelector("#animation");
+      const guides = document.querySelector("#guides");
+      const showGuides = document.querySelector("#show-guides");
+      const dimensions = document.querySelector("#dimensions");
+      const cleanView = document.querySelector("#clean-view");
+      const audio = mountAudioControls(document.querySelector("#audio-controls"), TIMELINE);
+      let previewTime = null;
+      let resourceTurn = -1;
+      function seekPreview(time) {
+        previewTime = time;
+        animation.contentWindow.postMessage({ type: "quantum-seek", time }, location.origin);
+      }
+      animation.addEventListener("load", () => { if (previewTime !== null) seekPreview(previewTime); });
+
+      addEventListener("message", (event) => {
+        if (event.origin !== location.origin || event.source !== animation.contentWindow) return;
+        if (event.data?.type === "quantum-audio-frame") audio.update(event.data);
+      });
+      document.querySelector("#replay-cats").addEventListener("click", () => {
+        resourceTurn = -1;
+        seekPreview(TIMELINE.scenes.peek.start + 5.5);
+      });
+      document.querySelector("#replay-resources").addEventListener("click", () => {
+        resourceTurn = (resourceTurn + 1) % 3;
+        seekPreview(resourceTurn * 40 + 8);
+      });
+
+      mapper.screens.forEach((screen, index) => {
+        select.add(new Option(`Pantalla ${index + 1}`, screen.id));
+        const guide = document.createElement("div");
+        guide.className = "guide";
+        guide.style.left = `${(screen.x - mapper.bounds.x) / mapper.bounds.width * 100}%`;
+        guide.style.top = `${(screen.y - mapper.bounds.y) / mapper.bounds.height * 100}%`;
+        guide.style.width = `${screen.width / mapper.bounds.width * 100}%`;
+        guide.style.height = `${screen.height / mapper.bounds.height * 100}%`;
+        const label = document.createElement("span");
+        label.textContent = String(index + 1).padStart(2, "0");
+        guide.append(label);
+        guides.append(guide);
+      });
+
+      function updateView() {
+        const screen = mapper.screens.find((item) => item.id === select.value);
+        const view = screen || mapper.bounds;
+        const rotated = [90, 270].includes(view.orientation);
+        stage.style.setProperty("--aspect", rotated ? view.height / view.width : view.width / view.height);
+        const url = new URL("./index.html", location.href);
+        if (screen) url.searchParams.set("screen", screen.id);
+        cleanView.href = url.href;
+        url.searchParams.set("preview", "1");
+        animation.src = url.href;
+        dimensions.textContent = `${screen ? select.selectedOptions[0].text : `${mapper.screens.length} pantallas`} · ${view.width} × ${view.height} px · Bucle de ${TIMELINE.loopDuration} s`;
+        showGuides.disabled = Boolean(screen);
+        guides.hidden = Boolean(screen) || !showGuides.checked;
+      }
+
+      select.addEventListener("change", updateView);
+      showGuides.addEventListener("change", () => { guides.hidden = !showGuides.checked; });
+      updateView();
+    </script>
+  </body>
+</html>

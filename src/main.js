@@ -7,6 +7,11 @@ import { QuantumEnvironment } from "./components/quantum-environment.js";
 import { QuantumCat } from "./components/cat-component.js";
 import { QuantumEffects } from "./components/quantum-effects.js";
 import { drawDebugOverlay } from "./components/debug-overlay.js";
+import { mountAudioControls } from "./components/quantum-audio.js";
+import { clamp } from "./core/math.js";
+import { RESOURCE_CONFIG } from "./config/resource-config.js";
+import { QuantumPanels } from "./components/quantum-panels.js";
+import { ResourceScreens } from "./components/resource-screens.js";
 
 const canvas = document.querySelector("#quantum-canvas");
 const ctx = canvas.getContext("2d", { alpha: false, desynchronized: true });
@@ -15,8 +20,20 @@ const clock = new Timeline(TIMELINE);
 const environment = new QuantumEnvironment(VISUAL_CONFIG, mapper.bounds);
 const cat = new QuantumCat(VISUAL_CONFIG, mapper.bounds, TIMELINE);
 const effects = new QuantumEffects(VISUAL_CONFIG, mapper.bounds, TIMELINE, environment);
+const panels = new QuantumPanels(TIMELINE, cat.finaleLogo);
+const resources = new ResourceScreens(RESOURCE_CONFIG, TIMELINE);
 const performanceConfig = VISUAL_CONFIG.performance;
 const frameInterval = 1000 / performanceConfig.targetFps;
+const embeddedPreview = window.parent !== window && new URLSearchParams(location.search).has("preview");
+let audio = null;
+let lastAudioFrameAt = -Infinity;
+if (!embeddedPreview) {
+  const controls = document.createElement("aside");
+  controls.className = "audio-floating";
+  controls.setAttribute("aria-label", "Sonido espacial");
+  document.body.append(controls);
+  audio = mountAudioControls(controls, TIMELINE);
+}
 let lastFrameAt = 0;
 let renderQuality = 1;
 let overBudgetFrames = 0;
@@ -79,8 +96,23 @@ function render(timestamp) {
   const time = clock.time;
   const interaction = effects.interactionIntensity(time);
   environment.render(ctx, mapper, time, interaction);
+  const resourceFrame = resources.frame(mapper, time, clock.cycle);
+  panels.render(ctx, mapper, time, resourceFrame.alpha > .1 ? resourceFrame.assignments : [], renderQuality);
   effects.render(ctx, mapper, time);
+  resources.render(ctx, mapper, time, clock.cycle, clock.running);
   cat.render(ctx, mapper, time);
+  if (timestamp - lastAudioFrameAt >= 75) {
+    const position = cat.getJourneyPosition(mapper, time);
+    const frame = {
+      time,
+      running: clock.running,
+      catPan: clamp((position.x - mapper.bounds.x) / mapper.bounds.width * 2 - 1, -1, 1),
+      catVisible: position.visible,
+    };
+    if (embeddedPreview) window.parent.postMessage({ type: "quantum-audio-frame", ...frame }, location.origin);
+    else audio.update(frame);
+    lastAudioFrameAt = timestamp;
+  }
   if (SCREEN_CONFIG.debugMode) {
     drawDebugOverlay(ctx, mapper, time, cat, TIMELINE, VISUAL_CONFIG.palette);
   }
@@ -89,6 +121,7 @@ function render(timestamp) {
 
 addEventListener("resize", resize);
 addEventListener("keydown", (event) => {
+  if (event.target instanceof HTMLElement && event.target.closest("button, input, select, textarea")) return;
   if (event.key.toLowerCase() === "f") {
     if (!document.fullscreenElement) document.documentElement.requestFullscreen?.();
     else document.exitFullscreen?.();
@@ -101,7 +134,16 @@ addEventListener("keydown", (event) => {
     clock.seek(Number(event.key) * 10);
   }
 });
-addEventListener("dblclick", () => document.documentElement.requestFullscreen?.());
+canvas.addEventListener("dblclick", () => document.documentElement.requestFullscreen?.());
+
+// The HTML preview can replay the finale without changing the installation clock.
+addEventListener("message", (event) => {
+  if (!embeddedPreview || event.origin !== location.origin || event.source !== window.parent) return;
+  if (event.data?.type !== "quantum-seek" || !Number.isFinite(event.data.time)) return;
+  clock.seek(clamp(event.data.time, 0, TIMELINE.loopDuration));
+  const shouldRun = event.data.paused !== true;
+  if (clock.running !== shouldRun) clock.toggle();
+});
 
 validateConfiguration();
 resize();

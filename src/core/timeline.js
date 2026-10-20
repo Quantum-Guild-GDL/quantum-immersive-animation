@@ -6,11 +6,16 @@ export class Timeline {
     this.running = true;
   }
 
-  get time() {
+  get seconds() {
     const clock = this.running ? Date.now() : this.pausedAt;
-    const seconds = (clock - this.pauseOffset) / 1000;
-    return ((seconds % this.config.loopDuration) + this.config.loopDuration) % this.config.loopDuration;
+    return (clock - this.pauseOffset) / 1000;
   }
+
+  get time() {
+    return ((this.seconds % this.config.loopDuration) + this.config.loopDuration) % this.config.loopDuration;
+  }
+
+  get cycle() { return Math.floor(this.seconds / this.config.loopDuration); }
 
   toggle() {
     if (this.running) {

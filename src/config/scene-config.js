@@ -22,7 +22,7 @@ export const VISUAL_CONFIG = {
   cat: {
     asset: "assets/easter-eggs/quantum-cat.png",
     width: 500,
-    opacity: 0.34,
+    opacity: 0.58,
     trajectoryY: 0.51,
   },
   finale: {
